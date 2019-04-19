@@ -13,7 +13,7 @@ File BMEData;
 File BNOData;
 File GPSData;
 
-const int chipSelect = BUILTIN_SDCARD; //currently not working. update SDFat library
+const int chipSelect = BUILTIN_SDCARD;
 
 
 #define SEALEVELPRESSURE_HPA (1013.25)
@@ -21,20 +21,20 @@ const int chipSelect = BUILTIN_SDCARD; //currently not working. update SDFat lib
 #define BME_MISO 12
 #define BME_MOSI 11
 #define BME_CS 10
-//#define BME_SCK 19 //i2c hookup differs from test code
-//#define BME_SDI 18
+#define BME_SCK 19 //i2c hookup differs from test code
+#define BME_SDI 18
 
 #define BNO055_SAMPLERATE_DELAY_MS (100) //sample rate delay
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55); //I2C
 Adafruit_BME280 bme; // I2C
 
-#define  Serial5 //GPSSerial teensy hardware serial port i believe
+HardwareSerial GPSSerial = Serial5; //GPSSerial teensy hardware serial port i believe
 Adafruit_GPS GPS(&GPSSerial); //GPS on the hardware port
-#define GPSECHO false
+#define GPSECHO true
 
 
-uint32_t timer = millis(); //tim
+uint32_t timer = millis(); //timer
 IntervalTimer myTimer1;
 IntervalTimer myTimer2;
 IntervalTimer myTimer3;
