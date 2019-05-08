@@ -93,7 +93,7 @@ void setup() {
   displaySensorDetails(); //optional
   displaySensorStatus(); //optional
   bno.setExtCrystalUse(true); //time
-  
+
   Serial.begin(9600); //REDUNDANT
   Serial.println(F("BME280 Test"));
   if (!bme.begin()) {
@@ -102,27 +102,21 @@ void setup() {
   }
   else {
     Serial.println("DEFAULT TEST");
-    //    delayTime = 1000;
-
     Serial.println();
-
+    
     delay(1000); // let sensor boot up
-    myTimer1.begin(readBNO, 150000);  // micros: readBNO to run every 1 seconds
-
+    myTimer1.begin(readBNO, 500000);  // micros: readBNO to run every .5 seconds
     delay(1000); // let sensor boot up
     myTimer2.begin(readGPS, 1000000);  // micros: readGPS to run every 1 seconds
-
     delay(1000); // let sensor boot up
-    myTimer3.begin(readBME, 150000);  // micros: readBME to run every 1 seconds
+    myTimer3.begin(readBME, 500000);  // micros: readBME to run every .5 seconds
   }
 }
 
-void loop() // run over and over again
-{
-  //void readGPS();
+void loop() {
 }
 
-void displaySensorDetails() //(void)
+void displaySensorDetails()
 {
   sensor_t sensor;
   bno.getSensor(&sensor);
@@ -145,7 +139,7 @@ void displaySensorDetails() //(void)
   delay(1000);
 }
 
-void displaySensorStatus()//(void)
+void displaySensorStatus()
 {
   /* Get the system status values (mostly for debugging purposes) */
   uint8_t system_status, self_test_results, system_error;
@@ -192,8 +186,8 @@ void displayCalStatus() //(void)
   }
 }
 
-void readBNO() {//later
-  BNOData = SD.open("BNO.txt", FILE_WRITE);
+void readBNO() {
+  File BNOData = SD.open("BNO.txt", FILE_WRITE);
   /* Get a new sensor event */
   sensors_event_t event;
   bno.getEvent(&event);
@@ -264,17 +258,8 @@ void readBNO() {//later
 }
 
 void readGPS() {
-  GPSData = SD.open("GPS.txt", FILE_WRITE);
-  char c = GPS.read();
-  if (c) Serial.print(c);
-  if (GPS.newNMEAreceived()) {
-    Serial.println(GPS.lastNMEA()); // this also sets the newNMEAreceived() flag to false
-    if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
-      return; // we can fail to parse a sentence in which case we should just wait for another
-  }
-  if (timer > millis()) timer = millis();//prevent overflow timer error
-  if (millis() - timer > 2000) {// approximately every 2 seconds or so, print out the current stats
-    timer = millis(); // reset the timer
+  File GPSData = SD.open("GPS.txt", FILE_WRITE);
+  Serial.print(GPS.read());
     Serial.print("\nTime: ");
     Serial.print(GPS.hour, DEC);
     Serial.print(':');
@@ -318,13 +303,13 @@ void readGPS() {
       GPSData.println(GPS.lon);
       GPSData.close();
     }
-    else
-      GPSData.println(".");
+    else {
+      Serial.print("No Fix.");
+      GPSData.print("No Fix.");
+    }
   }
-  GPSData.close();
-}
 void readBME() {
-  BMEData = SD.open("BME.txt", FILE_WRITE);
+  File BMEData = SD.open("BME.txt", FILE_WRITE);
   double temperature = bme.readTemperature();
   double pressure = bme.readPressure();
   double alt = bme.readAltitude(SEALEVELPRESSURE_HPA);
