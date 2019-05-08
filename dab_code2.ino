@@ -8,7 +8,7 @@
 #include <SD.h>
 #include <SPI.h>
 #include <Wire.h>
-//gps machnine broke
+
 const int chipSelect = BUILTIN_SDCARD;
 
 File BMEData;
@@ -17,21 +17,18 @@ File GPSData;
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
-#define BME_SCK 13
+#define BME_SCK 13 // pin config. using last years board to test
 #define BME_MISO 12
 #define BME_MOSI 11
 #define BME_CS 10
 
-#define BNO055_SAMPLERATE_DELAY_MS 100
+#define BNO055_SAMPLERATE_DELAY_MS 150
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55); //I2C
 Adafruit_BME280 bme; // I2C
 
-HardwareSerial GPSSerial = Serial5; //GPSSerial teensy hardware serial port i believe
-Adafruit_GPS GPS(&GPSSerial); //GPS on the hardware port
-#define GPSECHO true
-
-uint32_t timer = millis(); //timer GPS
+HardwareSerial GPSSerial = Serial5; //GPSSerial teensy hardware serial port
+Adafruit_GPS GPS(&GPSSerial); //GPS is on a hardware port
 
 IntervalTimer myTimer1;
 IntervalTimer myTimer2;
@@ -101,23 +98,22 @@ void setup() {
     return;
   }
   else {
-    Serial.println("DEFAULT TEST");
+    Serial.println("--DEFAULT TEST--"); //let's us know in serial monitor when test is ready.
     Serial.println();
-    
     delay(1000); // let sensor boot up
-    myTimer1.begin(readBNO, 500000);  // micros: readBNO to run every .5 seconds
+    myTimer1.begin(readBNO, 150000);  // micros: readBNO to run every .15 seconds
     delay(1000); // let sensor boot up
     myTimer2.begin(readGPS, 1000000);  // micros: readGPS to run every 1 seconds
     delay(1000); // let sensor boot up
-    myTimer3.begin(readBME, 500000);  // micros: readBME to run every .5 seconds
+    myTimer3.begin(readBME, 150000);  // micros: readBME to run every .15 seconds
   }
 }
 
 void loop() {
 }
 
-void displaySensorDetails()
-{
+ void displaySensorDetails() //from last year optional
+  {
   sensor_t sensor;
   bno.getSensor(&sensor);
   Serial.print  ("Sensor:       ");
@@ -137,19 +133,18 @@ void displaySensorDetails()
   Serial.println(" xxx");
   Serial.println("");
   delay(1000);
-}
-
-void displaySensorStatus()
+  }
+  
+void displaySensorStatus() //optional
 {
   /* Get the system status values (mostly for debugging purposes) */
   uint8_t system_status, self_test_results, system_error;
   system_status = self_test_results = system_error = 0;
   bno.getSystemStatus(&system_status, &self_test_results, &system_error);
-
   /* Display the results in the Serial Monitor */
   Serial.println("");
   Serial.print("System Status: 0x");
-  Serial.println(system_status, HEX);
+  Serial.println(system_status, HEX); //HEX or DC
   Serial.print("Self Test:     0x");
   Serial.println(self_test_results, HEX);
   Serial.print("System Error:  0x");
@@ -158,7 +153,7 @@ void displaySensorStatus()
   delay(1000);
 }
 
-void displayCalStatus() //(void)
+void displayCalStatus()
 {
   /* Get the four calibration values (0..3) */
   /* Any sensor data reporting 0 should be ignored, */
@@ -176,13 +171,13 @@ void displayCalStatus() //(void)
   {
     /* Display the individual values */
     Serial.print("Sys:");
-    Serial.print(system, DEC);
+    Serial.print(system, HEX);
     Serial.print(" G:");
-    Serial.print(gyro, DEC);
+    Serial.print(gyro, HEX);
     Serial.print(" A:");
-    Serial.print(accel, DEC);
+    Serial.print(accel, HEX);
     Serial.print(" M:");
-    Serial.println(mag, DEC);
+    Serial.println(mag, HEX);
   }
 }
 
@@ -260,54 +255,54 @@ void readBNO() {
 void readGPS() {
   File GPSData = SD.open("GPS.txt", FILE_WRITE);
   Serial.print(GPS.read());
-    Serial.print("\nTime: ");
-    Serial.print(GPS.hour, DEC);
-    Serial.print(':');
-    Serial.print(GPS.minute, DEC);
-    Serial.print(':');
-    Serial.print(GPS.seconds, DEC);
-    Serial.print('.');
-    Serial.println(GPS.milliseconds);
-    Serial.print("Date: ");
-    Serial.print(GPS.day, DEC);
-    Serial.print('/');
-    Serial.print(GPS.month, DEC);
-    Serial.print("/20");
-    Serial.println(GPS.year, DEC);
-    Serial.print("Fix: ");
-    Serial.print((int)GPS.fix);
-    Serial.print("\nQuality: ");
-    Serial.println((int)GPS.fixquality);
+  Serial.print("\nTime: ");
+  Serial.print(GPS.hour, HEX); //HEX or DEC
+  Serial.print(':');
+  Serial.print(GPS.minute, HEX);
+  Serial.print(':');
+  Serial.print(GPS.seconds, HEX);
+  Serial.print('.');
+  Serial.println(GPS.milliseconds);
+  Serial.print("Date: ");
+  Serial.print(GPS.day, HEX);
+  Serial.print('/');
+  Serial.print(GPS.month, HEX);
+  Serial.print("/20");
+  Serial.println(GPS.year, HEX);
+  Serial.print("Fix: ");
+  Serial.print((int)GPS.fix);
+  Serial.print("\nQuality: ");
+  Serial.println((int)GPS.fixquality);
+  Serial.println();
+  if (GPS.fix) {
+    Serial.print("Location: ");
+    Serial.print(GPS.latitude, 4);
+    Serial.print(GPS.lat);
+    Serial.print(", "); //separating latitude and longitude
+    Serial.print(GPS.longitude, 4);
+    Serial.println(GPS.lon);
+    Serial.print("Speed (knots): ");
+    Serial.println(GPS.speed);
+    Serial.print("Angle: ");
+    Serial.println(GPS.angle);
+    Serial.print("Altitude: ");
+    Serial.println(GPS.altitude);
+    Serial.print("Satellites: ");
+    Serial.println((int)GPS.satellites);
     Serial.println();
-    if (GPS.fix) {
-      Serial.print("Location: ");
-      Serial.print(GPS.latitude, 4);
-      Serial.print(GPS.lat);
-      Serial.print(", ");
-      Serial.print(GPS.longitude, 4);
-      Serial.println(GPS.lon);
-      Serial.print("Speed (knots): ");
-      Serial.println(GPS.speed);
-      Serial.print("Angle: ");
-      Serial.println(GPS.angle);
-      Serial.print("Altitude: ");
-      Serial.println(GPS.altitude);
-      Serial.print("Satellites: ");
-      Serial.println((int)GPS.satellites);
-      Serial.println();
-      GPSData.print("Location: ");
-      GPSData.print(GPS.latitude, 4);
-      GPSData.print(GPS.lat);
-      GPSData.print(", ");
-      GPSData.print(GPS.longitude, 4);
-      GPSData.println(GPS.lon);
-      GPSData.close();
-    }
-    else {
-      Serial.print("No Fix.");
-      GPSData.print("No Fix.");
-    }
+    GPSData.print("Location: ");
+    GPSData.print(GPS.latitude, 4);
+    GPSData.print(GPS.lat);
+    GPSData.print(", ");
+    GPSData.print(GPS.longitude, 4);
+    GPSData.println(GPS.lon);
+    GPSData.close();
   }
+  else {
+    Serial.print("No Fix.");
+    GPSData.print("No Fix.");
+  }
+}
 void readBME() {
   File BMEData = SD.open("BME.txt", FILE_WRITE);
   double temperature = bme.readTemperature();
@@ -337,9 +332,9 @@ void readBME() {
   BMEData.println(humidity);
   BMEData.close();
 }
-
-//????
 /*
+  ????
+  Hex conversions code here
   xbee.print(BMEData);
   xbee.print(BNOData);
   xbee.print(GPSData);
