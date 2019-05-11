@@ -5,9 +5,9 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <utility/imumaths.h> //bno
-#include <SD.h>
+#include <SD.h> //use SDFat library to format new SD cards
 #include <SPI.h>
-#include <Wire.h>
+#include <XBee.h>
 
 //Teensy 3.5 and 3.6 SD Card
 const int chipSelect = BUILTIN_SDCARD;
@@ -36,8 +36,8 @@ Adafruit_BME280 bme;
 //hardware serial setup for GPS
 HardwareSerial GPSSerial = Serial5;
 Adafruit_GPS GPS(&GPSSerial);
-#define GPSECHO true
 
+//Hardware serial
 uint32_t timer = millis(); //timer GPS
 
 //GPSSerial teensy hardware serial port
@@ -82,7 +82,7 @@ void setup() {
   } else {
     Serial.println("error opening BME.txt");
   }
-  GPS.begin(9600);
+  GPSSerial.begin(9600); //GPS.begin(9600)
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA); //RMC (recommended minimum) and GGA (fix data) including altitude
   //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY); //"minimum recommended" data
   // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
@@ -113,11 +113,11 @@ void setup() {
     Serial.println("DEFAULT TEST");
     Serial.println();
     delay(1000); // let sensor boot up
-    myTimer1.begin(readBNO, 500000);  // micros: readBNO to run every .5 seconds
+    myTimer1.begin(readBNO, 150000);  // micros: readBNO to run every .15 seconds
     delay(1000); // let sensor boot up
-    myTimer2.begin(readGPS, 1000000);  // micros: readGPS to run every 1 seconds
+    myTimer2.begin(readGPS, 100000);  // micros: readGPS to run every 1 seconds
     delay(1000); // let sensor boot up
-    myTimer3.begin(readBME, 500000);  // micros: readBME to run every .5 seconds
+    myTimer3.begin(readBME, 150000);  // micros: readBME to run every .15 seconds
   }
 }
 
@@ -267,59 +267,72 @@ void readBNO() {
 
 void readGPS() {
   File GPSData = SD.open("GPS.txt", FILE_WRITE);
-  //show availible data in serial monitor
-  Serial.print(GPS.read());
-  Serial.print("\nTime: ");
-  Serial.print(GPS.hour, DEC);
-  Serial.print(':');
-  Serial.print(GPS.minute, DEC);
-  Serial.print(':');
-  Serial.print(GPS.seconds, DEC);
-  Serial.print('.');
-  Serial.println(GPS.milliseconds);
-  Serial.print("Date: ");
-  Serial.print(GPS.day, DEC);
-  Serial.print('/');
-  Serial.print(GPS.month, DEC);
-  Serial.print("/20");
-  Serial.println(GPS.year, DEC);
-  Serial.print("Fix: ");
-  Serial.print((int)GPS.fix);
-  Serial.print("\nQuality: ");
-  Serial.println((int)GPS.fixquality);
-  Serial.println();
-  Serial.print("Location: ");
-  Serial.print(GPS.latitude, 4);
-  Serial.print(GPS.lat);
-  Serial.print(", ");
-  Serial.print(GPS.longitude, 4);
-  Serial.println(GPS.lon);
-  Serial.print("Speed (knots): ");
-  Serial.println(GPS.speed);
-  Serial.print("Angle: ");
-  Serial.println(GPS.angle);
-  Serial.print("Altitude: ");
-  Serial.println(GPS.altitude);
-  Serial.print("Satellites: ");
-  Serial.println((int)GPS.satellites);
-  Serial.println();
-  //log to sd card
-  GPSData.print(GPS.read());
-  GPSData.print("Location: ");
-  GPSData.print(GPS.latitude, 4);
-  GPSData.print(GPS.lat);
-  GPSData.print(", ");
-  GPSData.print(GPS.longitude, 4);
-  GPSData.println(GPS.lon);
-  GPSData.print("Speed (knots): ");
-  GPSData.println(GPS.speed);
-  GPSData.print("Angle: ");
-  GPSData.println(GPS.angle);
-  GPSData.print("Altitude: ");
-  GPSData.println(GPS.altitude);
-  GPSData.print("Satellites: ");
-  GPSData.println((int)GPS.satellites);
-  GPSData.close();
+  if (GPS.newNMEAreceived()) {
+    // a tricky thing here is if we print the NMEA sentence, or data
+    // we end up not listening and catching other sentences!
+    Serial.println(GPS.lastNMEA()); // this also sets the newNMEAreceived() flag to false
+    if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
+      return; // we can fail to parse a sentence in which case we should just wait for another
+  }
+  // if millis() or timer wraps around, we'll just reset it
+  if (timer > millis()) timer = millis();
+  // approximately every 2 seconds or so, print out the current stats
+  if (millis() - timer > 2000) {
+    timer = millis(); // reset the timer
+    //show availible data in serial monitor
+    //Serial.print(GPS.read());
+    Serial.print("\nTime: ");
+    Serial.print(GPS.hour, DEC);
+    Serial.print(':');
+    Serial.print(GPS.minute, DEC);
+    Serial.print(':');
+    Serial.print(GPS.seconds, DEC);
+    Serial.print('.');
+    Serial.println(GPS.milliseconds);
+    Serial.print("Date: ");
+    Serial.print(GPS.day, DEC);
+    Serial.print('/');
+    Serial.print(GPS.month, DEC);
+    Serial.print("/20");
+    Serial.println(GPS.year, DEC);
+    Serial.print("Fix: ");
+    Serial.print((int)GPS.fix);
+    Serial.print("\nQuality: ");
+    Serial.println((int)GPS.fixquality);
+    Serial.println();
+    Serial.print("Location: ");
+    Serial.print(GPS.latitude, 4);
+    Serial.print(GPS.lat);
+    Serial.print(", ");
+    Serial.print(GPS.longitude, 4);
+    Serial.println(GPS.lon);
+    Serial.print("Speed (knots): ");
+    Serial.println(GPS.speed);
+    Serial.print("Angle: ");
+    Serial.println(GPS.angle);
+    Serial.print("Altitude: ");
+    Serial.println(GPS.altitude);
+    Serial.print("Satellites: ");
+    Serial.println((int)GPS.satellites);
+    Serial.println();
+    //log to sd card
+    GPSData.print(GPS.read());
+    GPSData.print("Location: ");
+    GPSData.print(GPS.latitude, 4);
+    GPSData.print(GPS.lat);
+    GPSData.print(", ");
+    GPSData.print(GPS.longitude, 4);
+    GPSData.println(GPS.lon);
+    GPSData.print("Speed (knots): ");
+    GPSData.println(GPS.speed);
+    GPSData.print("Angle: ");
+    GPSData.println(GPS.angle);
+    GPSData.print("Altitude: ");
+    GPSData.println(GPS.altitude);
+    GPSData.print("Satellites: ");
+    GPSData.println((int)GPS.satellites);
+    GPSData.close();
+  }
 }
 void readBME() {
   File BMEData = SD.open("BME.txt", FILE_WRITE);
@@ -353,9 +366,10 @@ void readBME() {
   BMEData.close();
 }
 
+
 //????????
 /*
-  xbee.print(BMEData);
-  xbee.print(BNOData);
-  xbee.print(GPSData);
+  Xbee.print(BMEData);
+  Xbee.print(BNOData);
+  Xbee.print(GPSData);
 */
