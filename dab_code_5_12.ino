@@ -215,32 +215,32 @@ void readBNO() {
   imu::Vector<3> Linear_Accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
   /* Display the floating point data */
   Serial.print("Orientation X: ");
-  Serial.print(dataX, HEX);
+  Serial.print(dataX, DEC);
   Serial.print("\tY: ");
-  Serial.print(dataY, HEX);
+  Serial.print(dataY, DEC);
   Serial.print("\tZ: ");
-  Serial.print(dataZ, HEX);
+  Serial.print(dataZ, DEC);
   Serial.println("");
   Serial.print("Gyro X: ");
-  Serial.print(gyro.x(), HEX);
+  Serial.print(gyro.x(), DEC);
   Serial.print("\tY: ");
-  Serial.print(gyro.y(), HEX);
+  Serial.print(gyro.y(), DEC);
   Serial.print("\tZ: ");
-  Serial.print(gyro.z(), HEX);
+  Serial.print(gyro.z(), DEC);
   Serial.println("");
   Serial.print("Accel_Meter X: ");
-  Serial.print(Accel_Meter.x(), HEX);
+  Serial.print(Accel_Meter.x(), DEC);
   Serial.print("\tY: ");
-  Serial.print(Accel_Meter.y(), HEX);
+  Serial.print(Accel_Meter.y(), DEC);
   Serial.print("\tZ: ");
-  Serial.print(Accel_Meter.z(), HEX);
+  Serial.print(Accel_Meter.z(), DEC);
   Serial.println("");
   Serial.print("Linear_Accel X: ");
-  Serial.print(Accel_Meter.x(), HEX);
+  Serial.print(Accel_Meter.x(), DEC);
   Serial.print("\tY: ");
-  Serial.print(Accel_Meter.y(), HEX);
+  Serial.print(Accel_Meter.y(), DEC);
   Serial.print("\tZ: ");
-  Serial.print(Accel_Meter.z(), HEX);
+  Serial.print(Accel_Meter.z(), DEC);
   Serial.println("");
   Serial.println();
   //log to SD card
@@ -270,6 +270,7 @@ void readBNO() {
   /* Wait the specified delay before requesting next data */ 
   delay(100);
   BNOData.close();
+ //Xbee.p
 }
 
 void readGPS() {
